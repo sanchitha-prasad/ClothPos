@@ -1,0 +1,4 @@
+# This file ensures the wwwroot directory is tracked by git
+# Uploaded images will be stored in wwwroot/uploads/
+
+

@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.Data.SqlClient;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using MySqlConnector;
+using System.Collections.Generic;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,38 +83,59 @@ else
 // CORS Configuration
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
-        ?? new[] { "http://localhost:3000", "http://localhost:5173" };
-    
+    // Allow all origins - WARNING: Less secure, use only if needed
     options.AddPolicy("AllowReactApp", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        }
-        else
-        {
-            // Production: Allow specific origins or all (configure via environment variable)
-            var frontendUrl = builder.Configuration["FrontendUrl"];
-            if (!string.IsNullOrEmpty(frontendUrl))
-            {
-                policy.WithOrigins(frontendUrl)
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
-            }
-            else
-            {
-                // Fallback: Allow all origins (less secure, but works for quick setup)
-                policy.AllowAnyOrigin()
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
-            }
-        }
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+        // Note: AllowCredentials() cannot be used with AllowAnyOrigin()
+        // If you need credentials, use specific origins instead
     });
+    
+    // Alternative: Specific origins policy (more secure)
+    // Uncomment and use this instead if you want to restrict to specific origins
+    /*
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        // Get Netlify frontend URL from configuration
+        var netlifyUrl = builder.Configuration["FrontendUrl"] ?? "https://clothpos-frontend.netlify.app";
+        
+        // Build list of allowed origins
+        var origins = new List<string> 
+        { 
+            "http://localhost:3000", 
+            "http://localhost:5173",
+            "https://clothpos-frontend.netlify.app"
+        };
+        
+        // Add configured frontend URL if different
+        if (!string.IsNullOrEmpty(netlifyUrl) && !origins.Contains(netlifyUrl))
+        {
+            origins.Add(netlifyUrl);
+        }
+        
+        // Add any additional origins from configuration
+        var configOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+        if (configOrigins != null)
+        {
+            foreach (var origin in configOrigins)
+            {
+                if (!string.IsNullOrEmpty(origin) && !origins.Contains(origin))
+                {
+                    origins.Add(origin);
+                }
+            }
+        }
+        
+        // Configure CORS policy with credentials support
+        policy.WithOrigins(origins.ToArray())
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
+    });
+    */
 });
 
 // JWT Authentication
@@ -160,9 +182,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// IMPORTANT: CORS must be before UseAuthentication and UseAuthorization
+app.UseCors("AllowReactApp");
+
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // Enable static file serving for uploaded images
-app.UseCors("AllowReactApp");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

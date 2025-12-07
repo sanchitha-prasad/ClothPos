@@ -212,7 +212,7 @@ using (var scope = app.Services.CreateScope())
         logger.LogError("  DROP DATABASE ClothPosDB;");
         logger.LogError("  (Then restart the API)");
     }
-    catch (MySqlConnector.MySqlException mySqlEx) when (mySqlEx.ErrorCode == MySqlConnector.MySqlErrorCode.UnknownColumn) // Invalid column name (MySQL)
+    catch (MySqlConnector.MySqlException mySqlEx) when (mySqlEx.Message.Contains("Unknown column") || mySqlEx.Message.Contains("doesn't exist")) // Invalid column name (MySQL)
     {
         logger.LogError("==========================================");
         logger.LogError("DATABASE MIGRATION REQUIRED!");

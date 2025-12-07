@@ -202,3 +202,4 @@ SELECT USER(), CURRENT_USER();
 SHOW GRANTS FOR 'clothpos_user'@'localhost';
 ```
 
+

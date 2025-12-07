@@ -292,3 +292,4 @@ mysql -u clothpos_user -p ClothPosDB < backup.sql
 
 Your MySQL database is now ready to use with your ClothPos API! 🚀
 
+

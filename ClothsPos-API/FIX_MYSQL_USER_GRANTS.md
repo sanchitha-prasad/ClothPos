@@ -200,3 +200,4 @@ SHOW GRANTS FOR 'clothpos_user'@'%';
 
 This should resolve the error! ✅
 
+

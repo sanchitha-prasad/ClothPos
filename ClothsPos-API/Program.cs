@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using Microsoft.Data.SqlClient;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -188,11 +189,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         // Try a simple query that uses Username to check if column exists
+        // Use database-agnostic syntax (LIMIT works for both MySQL and SQL Server 2012+)
         var testQuery = await db.Database.ExecuteSqlRawAsync(
-            "SELECT TOP 1 Username FROM Users WHERE 1=0"
+            useMySql 
+                ? "SELECT Username FROM Users WHERE 1=0 LIMIT 1"
+                : "SELECT TOP 1 Username FROM Users WHERE 1=0"
         );
     }
-    catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 207) // Invalid column name
+    catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 207) // Invalid column name (SQL Server)
     {
         logger.LogError("==========================================");
         logger.LogError("DATABASE MIGRATION REQUIRED!");
@@ -203,6 +207,21 @@ using (var scope = app.Services.CreateScope())
         logger.LogError("  1. Open SQL Server Management Studio");
         logger.LogError("  2. Connect to your database");
         logger.LogError("  3. Open and execute: ClothsPos-API/Database/AddUsernameColumn.sql");
+        logger.LogError("");
+        logger.LogError("OR drop and recreate the database (DEVELOMPMENT ONLY - loses data):");
+        logger.LogError("  DROP DATABASE ClothPosDB;");
+        logger.LogError("  (Then restart the API)");
+    }
+    catch (MySqlConnector.MySqlException mySqlEx) when (mySqlEx.ErrorCode == MySqlConnector.MySqlErrorCode.UnknownColumn) // Invalid column name (MySQL)
+    {
+        logger.LogError("==========================================");
+        logger.LogError("DATABASE MIGRATION REQUIRED!");
+        logger.LogError("==========================================");
+        logger.LogError("The 'Username' column is missing from the Users table.");
+        logger.LogError("");
+        logger.LogError("SOLUTION: Run the migration script:");
+        logger.LogError("  1. Connect to MySQL");
+        logger.LogError("  2. Execute: ClothsPos-API/Database/AddUsernameColumn.sql");
         logger.LogError("");
         logger.LogError("OR drop and recreate the database (DEVELOMPMENT ONLY - loses data):");
         logger.LogError("  DROP DATABASE ClothPosDB;");

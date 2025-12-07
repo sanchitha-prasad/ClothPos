@@ -239,3 +239,4 @@ GRANT ALL PRIVILEGES ON ClothPosDB.* TO 'clothpos_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
+
